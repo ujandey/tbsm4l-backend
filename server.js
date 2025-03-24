@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const path = require('path');
 const Pusher = require('pusher');
 
 dotenv.config();
@@ -16,21 +15,17 @@ const pusher = new Pusher({
     useTLS: true
 });
 
-const staticPath = path.join(__dirname, '../frontend');
-console.log(`Serving static files from: ${staticPath}`);
-
 app.use((req, res, next) => {
     console.log(`Request Method: ${req.method}, Request URL: ${req.url}`);
     next();
 });
 
 app.use(cors({
-    origin: (origin, callback) => callback(null, true),
+    origin: (origin, callback) => callback(null, true), // Allow all for now
     credentials: true
 }));
 app.use(express.json());
 
-// Move this BEFORE static serving
 app.post('/send-message', (req, res) => {
     const { channel, event, data } = req.body;
     if (!channel || !event || !data) {
@@ -48,10 +43,12 @@ app.post('/send-message', (req, res) => {
     });
 });
 
-app.use(express.static(staticPath));
+app.get('/', (req, res) => {
+    res.json({ status: 'Backend live' }); // Health check
+});
 
 app.use((req, res) => {
-    res.status(404).send('404 Not Found');
+    res.status(404).json({ error: '404 Not Found' });
 });
 
 const PORT = process.env.PORT || 3000;
