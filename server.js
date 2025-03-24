@@ -1,55 +1,51 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const Pusher = require('pusher');
-
-dotenv.config();
 
 const app = express();
 
+// Configure CORS to allow requests from your Vercel frontend
+app.use(cors({
+    origin: 'https://tbsm4l.vercel.app',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type'],
+    credentials: true
+}));
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// Initialize Pusher
 const pusher = new Pusher({
-    appId: process.env.PUSHER_APP_ID,
-    key: process.env.PUSHER_KEY,
-    secret: process.env.PUSHER_SECRET,
-    cluster: process.env.PUSHER_CLUSTER,
+    appId: '1962876', // Replace with your Pusher appId
+    key: '77ea7a0133da02d22aa5',      // Replace with your Pusher key
+    secret: '0c538753c7a6705300a0', // Replace with your Pusher secret
+    cluster: 'ap2',
     useTLS: true
 });
 
-app.use((req, res, next) => {
-    console.log(`Request Method: ${req.method}, Request URL: ${req.url}`);
-    next();
-});
-
-app.use(cors({
-    origin: (origin, callback) => callback(null, true), // Allow all for now
-    credentials: true
-}));
-app.use(express.json());
-
-app.post('/send-message', (req, res) => {
-    const { channel, event, data } = req.body;
-    if (!channel || !event || !data) {
-        console.error('Bad request: Missing fields', req.body);
-        return res.status(400).json({ error: 'Missing required fields' });
-    }
-    console.log('Sending to Pusher:', { channel, event, data });
-    pusher.trigger(channel, event, data, (err) => {
-        if (err) {
-            console.error('Pusher error:', err);
-            return res.status(500).json({ error: 'Failed to send message' });
-        }
-        console.log('Message sent to Pusher');
-        res.json({ success: true });
-    });
-});
-
+// Test route to confirm backend is live
 app.get('/', (req, res) => {
-    res.json({ status: 'Backend live' }); // Health check
+    res.json({ status: 'Backend live' });
 });
 
-app.use((req, res) => {
-    res.status(404).json({ error: '404 Not Found' });
+// Route to handle sending messages via Pusher
+app.post('/send-message', async (req, res) => {
+    const { channel, event, data } = req.body;
+    console.log(`Request Method: ${req.method}, Request URL: ${req.url}`);
+    console.log(`Sending to Pusher: ${JSON.stringify({ channel, event, data })}`);
+
+    try {
+        await pusher.trigger(channel, event, data);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Pusher error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
+// Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} 🔥`);
+});
