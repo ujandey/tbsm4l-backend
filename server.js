@@ -12,25 +12,32 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
 
 app.use(cors({
     origin: (origin, callback) => {
-        console.log('CORS origin check:', origin); // Debug log
-        if (!origin || allowedOrigins.includes(origin)) {
+        console.log('CORS origin check:', origin);
+        if (!origin) {
+            console.log('No origin provided - rejecting');
+            return callback(new Error('No origin provided'));
+        }
+        if (allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.log('Origin not allowed:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204 // Explicitly handle OPTIONS
+    optionsSuccessStatus: 204
 }));
 
 app.use(express.json());
 
-// Handle preflight OPTIONS requests explicitly
+// Explicit OPTIONS handler
 app.options('/send-message', (req, res) => {
-    console.log('Handling OPTIONS request for /send-message');
+    console.log('Handling OPTIONS for /send-message from origin:', req.headers.origin);
+    res.set('Access-Control-Allow-Origin', allowedOrigins.includes(req.headers.origin) ? req.headers.origin : '');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.status(204).end();
 });
 
@@ -46,7 +53,7 @@ const verifyToken = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ success: false, error: 'No token provided' });
     try {
-        jwt.verify(token, process.env.JWT_SECRET || 'your-supabase-jwt-secret'); // Use env or fallback
+        jwt.verify(token, process.env.JWT_SECRET || 'your-supabase-jwt-secret');
         next();
     } catch (err) {
         console.error('JWT verification failed:', err.message);
