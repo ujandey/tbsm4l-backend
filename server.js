@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const Pusher = require('pusher');
-const jwt = require('jsonwebtoken'); // Add jsonwebtoken: npm install jsonwebtoken
+const jwt = require('jsonwebtoken');
 
 const app = express();
 
@@ -33,7 +33,7 @@ const verifyToken = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ success: false, error: 'No token provided' });
     try {
-        jwt.verify(token, 'your-supabase-jwt-secret'); // Replace with actual Supabase secret
+        jwt.verify(token, 'TH4zYVX7WQ9IZDkCsDxteKh/yAz/mkahuEN2GiasWFWZVvpYkbau5LVw/q/LHcQpNIASxkaGJkA+Uo7RyjYvdA=='); // Replace with actual Supabase secret
         next();
     } catch (err) {
         res.status(403).json({ success: false, error: 'Invalid token' });
@@ -48,6 +48,7 @@ app.post('/send-message', verifyToken, async (req, res) => {
         return res.status(400).json({ success: false, error: 'Invalid request body' });
     }
     try {
+        console.log('Broadcasting:', { channel, event, data }); // Debug log
         await pusher.trigger(channel, event, data);
         res.json({ success: true });
     } catch (err) {
