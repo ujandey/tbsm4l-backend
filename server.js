@@ -6,24 +6,9 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 
-const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? ['https://tbsm4l.vercel.app']
-    : ['http://localhost:3000', 'https://tbsm4l.vercel.app'];
-
+// Temporary wildcard CORS for debugging
 app.use(cors({
-    origin: (origin, callback) => {
-        console.log('CORS origin check:', origin);
-        if (!origin) {
-            console.log('No origin provided - rejecting');
-            return callback(new Error('No origin provided'));
-        }
-        if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.log('Origin not allowed:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: '*', // Allow all origins temporarily
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -32,10 +17,20 @@ app.use(cors({
 
 app.use(express.json());
 
-// Explicit OPTIONS handler
+// Log all incoming requests
+app.use((req, res, next) => {
+    console.log('Incoming request:', {
+        method: req.method,
+        url: req.url,
+        headers: req.headers
+    });
+    next();
+});
+
+// Explicit OPTIONS handler (still needed for preflight)
 app.options('/send-message', (req, res) => {
-    console.log('Handling OPTIONS for /send-message from origin:', req.headers.origin);
-    res.set('Access-Control-Allow-Origin', allowedOrigins.includes(req.headers.origin) ? req.headers.origin : '');
+    console.log('Handling OPTIONS for /send-message:', req.headers);
+    res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.status(204).end();
